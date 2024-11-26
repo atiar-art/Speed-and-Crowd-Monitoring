@@ -1,1 +1,10 @@
 streamlit
+streamlit_option_menu
+datetime
+pytz
+time
+gspread
+oauth2client.service_account
+pandas
+matplotlib.pyplot
+matplotlib.dates
