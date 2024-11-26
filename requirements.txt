@@ -1,6 +1,5 @@
 streamlit
 pytz
 gspread
-oauth2client.service_account
 pandas
 matplotlib
