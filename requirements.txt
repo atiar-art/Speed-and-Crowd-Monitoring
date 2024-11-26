@@ -1,5 +1,4 @@
 streamlit
-streamlit_option_menu
 pytz
 gspread
 oauth2client.service_account
