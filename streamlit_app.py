@@ -154,7 +154,7 @@ try:
             marker='o',
             linestyle='-',
             color='red',
-            label='Mean Speed per Crowd Count'
+            label='Average Speed per Crowd Count'
         )
         plt.xlabel("Crowd Count (Number of People)")
         plt.ylabel("Average Speed (Kph)")
