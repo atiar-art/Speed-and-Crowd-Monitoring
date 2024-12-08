@@ -153,7 +153,7 @@ try:
             aggregated_data['Final Speed'],
             marker='o',
             linestyle='-',
-            color='purple',
+            color='red',
             label='Mean Speed per Crowd Count'
         )
         plt.xlabel("Crowd Count (Number of People)")
