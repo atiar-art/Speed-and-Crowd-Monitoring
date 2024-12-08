@@ -145,21 +145,26 @@ if selected == "Monitoring":
             how='inner'  # Exact match based on truncated timestamps
         )
 
-        # Check if there are enough data points after merging
+        # Check if there is data after merging
         if merged_data.empty:
-            st.warning("No matching data found after truncating to hour and minute.")
+            st.warning("No matching data found after merging.")
         else:
-            # Plot Crowd vs Speed
+            # Calculate mean Final Speed for each Count value
+            aggregated_data = merged_data.groupby('Count')['Final Speed'].mean().reset_index()
+
+            # Plot aggregated data
             plt.figure(figsize=(10, 5))
-            plt.scatter(
-                merged_data['Count'],          # x-axis: Crowd Count
-                merged_data['Final Speed'],    # y-axis: Final Speed
-                color='purple',                # Color of points
-                label="Crowd vs Speed"
+            plt.plot(
+                aggregated_data['Count'],      # x-axis: Count values
+                aggregated_data['Final Speed'],  # y-axis: Mean Final Speed
+                marker='o',                   # Add markers
+                linestyle='-',                # Connect points with a line
+                color='purple',               # Line color
+                label="Mean Speed per Crowd Count"
             )
             plt.xlabel("Crowd Count (Number of People)")
-            plt.ylabel("Final Speed (Kph)")
-            plt.title("Crowd Count vs Vehicle Speed")
+            plt.ylabel("Mean Final Speed (Kph)")
+            plt.title("Mean Final Speed vs Crowd Count")
             plt.grid(True)
             plt.legend()
             st.pyplot(plt)
