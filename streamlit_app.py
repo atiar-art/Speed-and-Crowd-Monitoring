@@ -5,7 +5,6 @@ import pytz
 import time
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 
 st.set_page_config(page_title="Speed and Crowd Monitoring", page_icon="activity")
 
@@ -56,46 +55,115 @@ if selected == "Home":
 
 if selected == "Monitoring":
     st.title(f"Speed and Crowd Monitoring")
+    
+    # Speed Monitoring Section
     st.subheader("🏎️💨 Speed Monitoring", divider="gray")
-
-    # Google Spreadsheet CSV Link
-    csv_url = "https://docs.google.com/spreadsheets/d/1KZMz0UJmLzo4R-5uCe61OLcvt0b5LPvrOcABXYSXVFw/export?format=csv"
+    speed_csv_url = "https://docs.google.com/spreadsheets/d/1KZMz0UJmLzo4R-5uCe61OLcvt0b5LPvrOcABXYSXVFw/export?format=csv"
 
     try:
-        # Fetch data from Google Sheets
-        data = fetch_google_sheet_csv(csv_url)
+        # Fetch and preprocess speed monitoring data
+        speed_data = fetch_google_sheet_csv(speed_csv_url)
+        speed_data['Timestamp (ESP1)'] = pd.to_datetime(speed_data['Timestamp (ESP1)'])
+        speed_data = speed_data.sort_values(by='Timestamp (ESP1)')  # Ensure chronological order
+        speed_data['Final Speed'] = pd.to_numeric(speed_data['Final Speed'], errors='coerce')
+        speed_data = speed_data.dropna(subset=['Final Speed'])
 
-        # Convert 'Timestamp (ESP 1)' to datetime format
-        data['Timestamp (ESP 1)'] = pd.to_datetime(data['Timestamp (ESP 1)'])
-
-        # Normalize timestamps to the nearest minute
-        data['Normalized Timestamp'] = data['Timestamp (ESP 1)'].dt.floor('T')
-
-        # Filter data for rows where minutes are divisible by 5
-        filtered_data = data[data['Normalized Timestamp'].dt.minute % 5 == 0]
-
-        # Plot the speed monitoring graph
-        st.subheader("Speed Monitoring Graph")
+        # Plot speed monitoring graph
         plt.figure(figsize=(10, 5))
+        plt.plot(
+            speed_data['Timestamp (ESP1)'],
+            speed_data['Final Speed'],
+            marker='o',       # Add points
+            linestyle='-',     # Connect points with a solid line
+            color='blue',      # Blue line
+            label='Vehicle Speed'
+        )
 
-        # Plot the filtered data
-        plt.plot(filtered_data['Normalized Timestamp'], filtered_data['Final Speed'], marker='o', label='Final Speed')
-
-        # Set x-axis ticks to match filtered timestamps
-        plt.xticks(filtered_data['Normalized Timestamp'], 
-                   filtered_data['Normalized Timestamp'].dt.strftime('%Y-%m-%d %H:%M'), 
-                   rotation=45)  # Format as 'YYYY-MM-DD HH:MM' and rotate
-
-        # Add labels, title, and grid
-        plt.xlabel("Timestamp (Every 5 Minutes)")
-        plt.ylabel("Final Speed")
+        # Customize x-axis ticks
+        plt.gca().xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter("%H:%M"))
+        plt.xticks(rotation=45)
+        plt.xlabel("Timestamp")
+        plt.ylabel("Final Speed (Kph)")
         plt.title("Final Speed Monitoring Over Time")
         plt.legend()
         plt.grid(True)
         st.pyplot(plt)
 
     except Exception as e:
-        st.error(f"Error fetching or processing data: {e}")
+        st.error(f"Error fetching or processing speed data: {e}")
 
+    # Crowd Monitoring Section
     st.subheader("🚏 Crowd Monitoring", divider="gray")
+    crowd_csv_url = "https://docs.google.com/spreadsheets/d/10YHVsMEsXq5a23Rjfk8NYfgKhIScL6fCbRKD9HCPYyg/export?format=csv"
+
+    try:
+        # Fetch and preprocess crowd monitoring data
+        crowd_data = fetch_google_sheet_csv(crowd_csv_url)
+        crowd_data['Timestamp'] = pd.to_datetime(crowd_data['Timestamp'])
+        crowd_data = crowd_data.sort_values(by='Timestamp')  # Ensure chronological order
+        crowd_data['Count'] = pd.to_numeric(crowd_data['Count'], errors='coerce')
+        crowd_data = crowd_data.dropna(subset=['Count'])
+
+        # Plot crowd monitoring graph
+        plt.figure(figsize=(10, 5))
+        plt.plot(
+            crowd_data['Timestamp'],
+            crowd_data['Count'],
+            marker='o',       # Add points
+            linestyle='-',     # Connect points with a solid line
+            color='green',     # Green line
+            label='People Count'
+        )
+
+        # Customize x-axis ticks
+        plt.gca().xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter("%H:%M"))
+        plt.xticks(rotation=45)
+        plt.xlabel("Timestamp")
+        plt.ylabel("Number of People")
+        plt.title("Crowd Monitoring Over Time")
+        plt.legend()
+        plt.grid(True)
+        st.pyplot(plt)
+
+    except Exception as e:
+        st.error(f"Error fetching or processing crowd data: {e}")
+
+    # Crowd vs Speed Monitoring Section
     st.subheader("📈 Crowd vs Speed Monitoring", divider="gray")
+
+    try:
+        # Truncate timestamps to only hour and minute
+        crowd_data['Truncated Timestamp'] = crowd_data['Timestamp'].dt.floor('T')  # Round down to minute
+        speed_data['Truncated Timestamp'] = speed_data['Timestamp (ESP1)'].dt.floor('T')  # Round down to minute
+
+        # Merge the datasets on the truncated timestamps
+        merged_data = pd.merge(
+            crowd_data,
+            speed_data,
+            left_on='Truncated Timestamp',
+            right_on='Truncated Timestamp',
+            how='inner'  # Exact match based on truncated timestamps
+        )
+
+        # Check if there are enough data points after merging
+        if merged_data.empty:
+            st.warning("No matching data found after truncating to hour and minute.")
+        else:
+            # Plot Crowd vs Speed
+            plt.figure(figsize=(10, 5))
+            plt.scatter(
+                merged_data['Count'],          # x-axis: Crowd Count
+                merged_data['Final Speed'],    # y-axis: Final Speed
+                color='purple',                # Color of points
+                label="Crowd vs Speed"
+            )
+            plt.xlabel("Crowd Count (Number of People)")
+            plt.ylabel("Final Speed (Kph)")
+            plt.title("Crowd Count vs Vehicle Speed")
+            plt.grid(True)
+            plt.legend()
+            st.pyplot(plt)
+
+    except Exception as e:
+        st.error(f"Error plotting Crowd vs Speed Monitoring: {e}")
+
